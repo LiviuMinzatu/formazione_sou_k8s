@@ -21,16 +21,6 @@ This project aims to automate the creation of a CI/CD environment using Jenkins,
 - GitHub account
 - DockerHub account
 
-## Repository Structure
-
-formazione_sou_k8s/
-├── Vagrantfile
-├── main_playbook.yml
-├── Jenkinsfile
-├── flask/
-│   ├── app.py
-│   ├── requirements.txt
-│   └── Dockerfile
 
 ## Component Details
 
