@@ -140,4 +140,15 @@ The VM will be accessible at `192.168.56.25`. Jenkins will be available on port 
 - The Jenkins Agent container has access to the host Docker socket via a shared volume (`/var/run/docker.sock`), allowing image building and pushing
 - The project can be extended to start a container with the Flask app at the end of the pipeline as an optional exercise
 
+## Important Notice
+
+Until the next patch is released, the VM does not have internet access immediately after running `vagrant up`.  
+As a temporary workaround, you can manually restore connectivity by running the following command:
+
+```bash
+sudo bash -c 'echo "nameserver 8.8.8.8" > /etc/resolv.conf'
+```
+There are also a few other minor issues currently present, which will be addressed soon in future updates.
+
+
 ## Project currently under development. New improvements will be available soon.
