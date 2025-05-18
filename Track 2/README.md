@@ -108,6 +108,8 @@ def getDockerTag() {
 }
 ```
 
+If you’ve made it this far, you’re truly awesome! Randomly
+
 ## DockerHub Credentials Configuration
 
 In Jenkins:
