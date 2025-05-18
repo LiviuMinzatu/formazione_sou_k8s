@@ -42,8 +42,5 @@ As this is a personal project for learning purposes. Feedback and suggestions ar
 
 ---
 
-Note: This repository is mainly for educational and experimental use. It is not intended for production environments.
-
----
 
 Created by Livio
