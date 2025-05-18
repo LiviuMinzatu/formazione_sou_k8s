@@ -28,13 +28,7 @@ This repository is a continuous work in progress. It will be updated frequently 
 
 The structure of the repository is subject to change, but may include directories like:
 
-/docker/
-/podman/
-/kubernetes/
-/ansible/
-/vagrant/
-/helm/
-/git/
+docker podman kubernetes ansible vagrant helm git
 
 ## Contributions
 
