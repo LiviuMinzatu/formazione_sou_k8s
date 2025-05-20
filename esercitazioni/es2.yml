@@ -1,0 +1,36 @@
+---
+- name: Create users from a list of dictionaries          # Play name, describes what it does
+  hosts: localhost                                        # Executed on the local machine (can be a remote host)
+  become: true                                            # Uses root privileges (necessary for creating users and groups)
+
+  vars:
+    users:                                                # Definition of the user list
+      - name: alice                                       # First user: name = alice
+        group: dev                                        # User's group
+        home: /home/alice                                 # Home directory
+        shell: /bin/bash                                  # Default shell
+      - name: matteo                                      # Second user: name = matteo
+        group: ops                                        # User's group
+        home: /home/matteo                                # Home directory
+        shell: /bin/zsh                                   # Default shell
+
+  tasks:
+    - name: Ensure groups exist                           # First task: create groups if they don't exist
+      ansible.builtin.group:                              # Uses the 'group' module to manage groups
+        name: "{{ item.group }}"                          # Group name from the user dictionary
+        state: present                                    # Ensures the group exists
+      loop: "{{ users }}"                                 # Iterates through the user list
+      loop_control:
+        label: "{{ item.group }}"                         # Displays the current group name in the logs
+
+    - name: Ensure users are created with correct properties  # Second task: create users with the correct settings
+      ansible.builtin.user:                               # Uses the 'user' module to create users
+        name: "{{ item.name }}"                           # User name
+        group: "{{ item.group }}"                         # User's group
+        home: "{{ item.home }}"                           # Home directory
+        shell: "{{ item.shell }}"                         # Default shell
+        state: present                                    # Ensures the user is present (created)
+        create_home: yes                                  # Automatically creates the home directory
+      loop: "{{ users }}"                                 # Iterates through the user list
+      loop_control:
+        label: "{{ item.name }}"                          # Displays the current user name in the logs
