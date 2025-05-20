@@ -1,22 +1,21 @@
-- name: Full Jenkins + Docker Provisioning
+- name: Provisioning completo Jenkins + Docker
   hosts: all
-  become: true  # Execute tasks with root privileges
+  become: true
 
   vars:
-    # Reusable variables — REPLACE the placeholder values with your real ones
     jenkins_agent_container: jenkins-agent
     jenkins_agent_image: jenkins/inbound-agent:latest
-    jenkins_agent_name: your-agent-name  # e.g. 'agent1'
-    jenkins_agent_secret: your-jenkins-secret  # e.g. '123abc...'
+    jenkins_agent_name: agent
+    jenkins_agent_secret: 137ce6cdbeb3ce52186e8b9ce9713d3b3b9fb64514e19c109bf30799faf0fa7b
     jenkins_agent_workdir: /home/jenkins/agent
     jenkins_container_name: jenkins-master
-    jenkins_ip: 172.30.0.10  # or change as needed
-    jenkins_master_url: http://172.30.0.10:8080  # must match jenkins_ip
+    jenkins_ip: 172.30.0.10
+    jenkins_master_url: http://172.30.0.10:8080
     jenkins_network: jenkins_net
-    jenkins_subnet: 172.30.0.0/16  # Docker subnet
+    jenkins_subnet: 172.30.0.0/16
 
   tasks:
-    - name: Remove old Docker versions
+    - name: Disinstalla eventuali versioni vecchie di Docker
       dnf:
         name:
           - docker
@@ -29,17 +28,17 @@
           - docker-engine
         state: absent
 
-    - name: Install required DNF plugins
+    - name: Installa pacchetti richiesti
       dnf:
         name: dnf-plugins-core
         state: present
 
-    - name: Add official Docker repository
+    - name: Aggiungi il repository Docker ufficiale
       command: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
       args:
         creates: /etc/yum.repos.d/docker-ce.repo
 
-    - name: Install Docker Engine
+    - name: Installa Docker Engine
       dnf:
         name:
           - docker-ce
@@ -49,30 +48,30 @@
           - docker-compose-plugin
         state: latest
 
-    - name: Enable and start Docker service
+    - name: Abilita e avvia il servizio Docker
       systemd:
         name: docker
         enabled: true
         state: started
 
-    - name: Install Python 3 and pip
+    - name: Installa python3 e pip3
       dnf:
         name:
           - python3
           - python3-pip
         state: present
 
-    - name: Install Docker Python module
+    - name: Installa il modulo docker di Python
       pip:
         executable: pip3
         name: docker
 
-    - name: Remove podman-docker if present
+    - name: Rimuovi podman-docker se presente (evita conflitto)
       dnf:
         name: podman-docker
         state: absent
 
-    - name: Ensure basic packages are present
+    - name: Installa pacchetti base (Python, pip, plugin DNF)
       dnf:
         name:
           - python3
@@ -80,12 +79,12 @@
           - dnf-plugins-core
         state: present
 
-    - name: Re-add Docker repo for safety
+    - name: Aggiungi il repository ufficiale di Docker (di nuovo per sicurezza)
       command: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
       args:
         creates: /etc/yum.repos.d/docker-ce.repo
 
-    - name: Ensure Docker CE is installed
+    - name: Installa Docker CE (ridondante ma sicuro)
       dnf:
         name:
           - docker-ce
@@ -93,25 +92,25 @@
           - containerd.io
         state: present
 
-    - name: Ensure Docker service is running
+    - name: Abilita e avvia il servizio Docker (di nuovo, per sicurezza)
       systemd:
         name: docker
         enabled: true
         state: started
 
-    - name: Reinstall Docker Python module
+    - name: Installa il modulo Python per Docker
       pip:
         executable: pip3
         name: docker
 
-    - name: Create Jenkins Docker network
+    - name: Crea rete Docker Jenkins
       community.docker.docker_network:
         name: "{{ jenkins_network }}"
         driver: bridge
         ipam_config:
           - subnet: "{{ jenkins_subnet }}"
 
-    - name: Run Jenkins master container
+    - name: Esegui container Jenkins (solo master)
       community.docker.docker_container:
         name: "{{ jenkins_container_name }}"
         image: jenkins/jenkins:lts
@@ -126,7 +125,7 @@
         volumes:
           - jenkins_home:/var/jenkins_home
 
-    - name: Run Jenkins Agent container with Docker socket
+    - name: Avvia container Jenkins Agent con accesso a Docker host
       community.docker.docker_container:
         name: "{{ jenkins_agent_container }}"
         image: "{{ jenkins_agent_image }}"
@@ -145,14 +144,14 @@
         restart_policy: always
         state: started
 
-    - name: Update package cache in Jenkins Agent container
+    - name: Aggiorna la cache dei pacchetti nel container agent
       community.docker.docker_container_exec:
         container: "{{ jenkins_agent_container }}"
         command: apt-get update
         tty: true
         user: root
 
-    - name: Install Docker CLI in Jenkins Agent container
+    - name: Installa la CLI Docker nel container agent
       community.docker.docker_container_exec:
         container: "{{ jenkins_agent_container }}"
         command: apt-get install -y docker.io
