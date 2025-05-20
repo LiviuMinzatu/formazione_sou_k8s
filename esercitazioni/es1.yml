@@ -1,16 +1,16 @@
-- name: Install or remove packages based on dictionary     # Play name, describes what it does
-  hosts: localhost                                         # Runs everything on the local machine (can be changed)
-  become: true                                             # Uses root privileges (necessary for installing/removing packages)
-  vars:                                                    # Section where variables are defined
-    packages:                                              # Dictionary of packages and desired state
-      vim: present                                         # 'vim' should be installed
-      nano: absent                                         # 'nano' should be removed
-      git: present                                         # 'git' should be installed
+- name: Install or remove packages based on dictionary     
+  hosts: localhost                                         
+  become: true                                             
+  vars:                                                    
+    packages:                                              
+      vim: present                                        
+      nano: absent                                         
+      git: present                                         
 
-  tasks:                                                   # Start of the task list to execute
-    - name: Ensure packages are in desired state           # Task name (useful for logging and readability)
-      ansible.builtin.package:                             # Ansible module that manages packages (universal across OSes)
-        name: "{{ item.key }}"                             # Package name, taken from the dictionary key
-        state: "{{ item.value }}"                          # Desired state (present/absent), taken from the dictionary value
-      loop: "{{ packages | dict2items }}"                  # Converts the dictionary into a list of items with 'key' and 'value'
-                                                           # and iterates over each package
+  tasks:                                                   
+    - name: Ensure packages are in desired state           
+      ansible.builtin.package:                             
+        name: "{{ item.key }}"                             
+        state: "{{ item.value }}"                          
+      loop: "{{ packages | dict2items }}"                  
+                                                           
