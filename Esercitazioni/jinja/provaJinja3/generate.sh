@@ -7,4 +7,4 @@ then
 fi
 
 jinja2 Dockerfile.j2 variables.yaml --format=yaml > Dockerfile
-echo "✅ Dockerfile generato!"
+echo " Dockerfile generato!"
