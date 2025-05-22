@@ -1,0 +1,79 @@
+pipeline {
+    agent { label 'agent' } // <-- FORZA USO DELL'AGENTE NOMINATO 'agent'
+
+    parameters {
+        string(name: 'GIT_REF', defaultValue: 'main', description: 'Branch o tag Git da usare')
+    }
+
+    environment {
+        DOCKER_HUB_REPO = 'freddo18/flask'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                sh '''
+                    echo "Clonazione repository..."
+                    rm -rf repo
+                    git clone https://github.com/LiviuMinzatu/formazione_sou_k8s.git repo
+                    cd repo
+                    git checkout ${GIT_REF}
+                '''
+            }
+        }
+
+        stage('Calcolo tag immagine Docker') {
+            steps {
+                script {
+                    def sha = sh(script: 'cd repo && git rev-parse --short HEAD', returnStdout: true).trim()
+                    def ref = params.GIT_REF?.trim() ?: 'main'
+
+                    if (ref == 'main') {
+                        env.IMAGE_TAG = 'latest'
+                    } else if (ref.startsWith('v')) {
+                        env.IMAGE_TAG = ref
+                    } else {
+                        env.IMAGE_TAG = "${ref}-${sha}"
+                    }
+
+                    echo "Tag Docker calcolato: ${env.IMAGE_TAG}"
+                }
+            }
+        }
+
+        stage('Build Docker') {
+            steps {
+                sh '''
+                    echo "Build Docker image..."
+                    cd repo/Track\\ 2/flask
+                    docker build -t ${DOCKER_HUB_REPO}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Push Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-creds',
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push ${DOCKER_HUB_REPO}:${IMAGE_TAG}
+                        docker logout
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                echo "Pulizia immagine locale..."
+                docker rmi ${DOCKER_HUB_REPO}:${IMAGE_TAG} || true
+            '''
+        }
+    }
+}
