@@ -1,0 +1,11 @@
+# Limiti per l'utente {{ utente }}
+
+{% if ambiente == 'produzione' %}
+{{ utente }} soft nofile 10000
+{{ utente }} hard nofile 10000
+{% elif ambiente == 'collaudo' or ambiente == 'sviluppo' %}
+{{ utente }} soft nofile 1000
+{{ utente }} hard nofile 1000
+{% else %}
+# Ambiente sconosciuto: {{ ambiente }}
+{% endif %}

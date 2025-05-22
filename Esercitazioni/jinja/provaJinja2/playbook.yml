@@ -1,0 +1,20 @@
+- name: Inserisce whitelist utenti in /etc/security/access.conf
+  hosts: localhost
+  become: true
+  connection: local
+  vars_files:
+    - vars.yml
+
+  tasks:
+
+    - name: Genera file whitelist da template
+      template:
+        src: templates/whitelist.j2
+        dest: /tmp/access_whitelist.txt
+
+    - name: Inserisce la whitelist prima del blocco totale
+      blockinfile:
+        path: /etc/security/access.conf
+        marker: "# {mark} ANSIBLE WHITELIST"
+        insertbefore: '^\- : ALL : ALL'
+        block: "{{ lookup('file', '/tmp/access_whitelist.txt') }}"

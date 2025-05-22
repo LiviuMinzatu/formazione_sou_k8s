@@ -1,0 +1,6 @@
+base_image: nginx:alpine
+extra_packages: []
+command:
+  - nginx
+  - "-g"
+  - "daemon off;"
