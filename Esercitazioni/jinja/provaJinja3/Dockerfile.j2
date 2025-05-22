@@ -1,12 +1,12 @@
-FROM {{ base_image }}
+FROM {{ base_image }}                           # Base image to use for the container (e.g., nginx:alpine)
 
 {% if extra_packages %}
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \     # If extra_packages is defined, install them using apt
     {% for pkg in extra_packages %}
-    {{ pkg }}{% if not loop.last %} \{% endif %}
+    {{ pkg }}{% if not loop.last %} \{% endif %}  # List each package, adding a backslash unless it's the last
     {% endfor %}
 {% endif %}
 
-COPY default.conf /etc/nginx/conf.d/default.conf
+COPY default.conf /etc/nginx/conf.d/default.conf  # Copy the Nginx config into the container
 
-CMD {{ command | tojson }}
+CMD {{ command | tojson }}                      # Run the container with the specified command (rendered as JSON array)

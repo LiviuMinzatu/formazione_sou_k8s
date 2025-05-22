@@ -1,11 +1,11 @@
-# Limits for user {{ utente }}
+# Limits for user {{ utente }}                 # Descriptive comment: sets file limits for the specified user
 
-{% if ambiente == 'produzione' %}
-{{ utente }} soft nofile 10000
-{{ utente }} hard nofile 10000
-{% elif ambiente == 'collaudo' or ambiente == 'sviluppo' %}
-{{ utente }} soft nofile 1000
-{{ utente }} hard nofile 1000
-{% else %}
-# Unknown environment: {{ ambiente }}
+{% if ambiente == 'produzione' %}              # If the environment is 'produzione' (production), set high limits
+{{ utente }} soft nofile 10000                 # Soft limit: maximum number of open files is 10,000 for the user
+{{ utente }} hard nofile 10000                 # Hard limit: absolute max number of open files (cannot be exceeded) is also 10,000
+{% elif ambiente == 'collaudo' or ambiente == 'sviluppo' %}  # If the environment is 'collaudo' (testing) or 'sviluppo' (development), set lower limits
+{{ utente }} soft nofile 1000                  # Soft limit reduced to 1,000 in test or development environments
+{{ utente }} hard nofile 1000                  # Hard limit reduced to 1,000 in test or development environments
+{% else %}                                     # If the environment is unrecognized
+# Unknown environment: {{ ambiente }}          # Comment indicating the environment is unknown
 {% endif %}

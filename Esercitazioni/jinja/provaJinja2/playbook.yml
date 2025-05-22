@@ -1,20 +1,20 @@
-- name: Inserisce whitelist utenti in /etc/security/access.conf
-  hosts: localhost
-  become: true
-  connection: local
+- name: Inserisce whitelist utenti in /etc/security/access.conf  # Play name: inserts a user whitelist into access.conf
+  hosts: localhost                                                # Runs locally
+  become: true                                                    # Run tasks with elevated privileges (sudo)
+  connection: local                                               # Local connection (not over SSH)
   vars_files:
-    - vars.yml
+    - vars.yml                                                    # Load variables from an external YAML file (e.g., list of allowed users)
 
   tasks:
 
-    - name: Genera file whitelist da template
+    - name: Genera file whitelist da template                     # First task: generate a whitelist file from a Jinja2 template
       template:
-        src: templates/whitelist.j2
-        dest: /tmp/access_whitelist.txt
+        src: templates/whitelist.j2                               # Source Jinja2 template
+        dest: /tmp/access_whitelist.txt                           # Temporary destination file for the rendered whitelist
 
-    - name: Inserisce la whitelist prima del blocco totale
+    - name: Inserisce la whitelist prima del blocco totale        # Second task: insert the whitelist before the deny-all rule
       blockinfile:
-        path: /etc/security/access.conf
-        marker: "# {mark} ANSIBLE WHITELIST"
-        insertbefore: '^\- : ALL : ALL'
-        block: "{{ lookup('file', '/tmp/access_whitelist.txt') }}"
+        path: /etc/security/access.conf                           # File to modify
+        marker: "# {mark} ANSIBLE WHITELIST"                      # Markers to identify the inserted block (idempotent)
+        insertbefore: '^\- : ALL : ALL'                           # Insert just before the line that blocks all access
+        block: "{{ lookup('file', '/tmp/access_whitelist.txt') }}"  # Load the rendered whitelist content from the temp file

@@ -1,18 +1,18 @@
-- name: Configure limits for user in /etc/security/limits.conf
-  hosts: localhost
-  become: true
-  connection: local
+- name: Configure limits for user in /etc/security/limits.conf  # Play name: sets user limits in limits.conf
+  hosts: localhost                                               # Runs on the local machine
+  become: true                                                   # Uses sudo to gain root privileges
+  connection: local                                              # Local connection (no SSH)
   vars_files:
-    - vars.yml
+    - vars.yml                                                   # Loads variables from an external file (e.g., 'utente', 'ambiente')
 
   tasks:
-    - name: Generate temporary file from template
+    - name: Generate temporary file from template                # First task: generate a temp file from a Jinja2 template
       template:
-        src: templates/limits.j2
-        dest: /tmp/limits_{{ utente }}.txt
+        src: templates/limits.j2                                 # Source template (Jinja2) that defines limits
+        dest: /tmp/limits_{{ utente }}.txt                       # Destination file: temporary file with rendered limits
 
-    - name: Insert limits into the /etc/security/limits.conf file
+    - name: Insert limits into the /etc/security/limits.conf file  # Second task: insert generated limits into the real config file
       blockinfile:
-        path: /etc/security/limits.conf
-        marker: "# {mark} ANSIBLE LIMITS {{ utente }}"
-        block: "{{ lookup('file', '/tmp/limits_' + utente + '.txt') }}"
+        path: /etc/security/limits.conf                          # Target file to modify
+        marker: "# {mark} ANSIBLE LIMITS {{ utente }}"           # Markers to delimit the inserted block (makes it idempotent)
+        block: "{{ lookup('file', '/tmp/limits_' + utente + '.txt') }}"  # The content to insert, read from the temp file
