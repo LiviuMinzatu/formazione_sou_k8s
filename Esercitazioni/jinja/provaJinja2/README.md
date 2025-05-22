@@ -1,7 +1,7 @@
-# Exercise 2
+# Jinja Exercise 2
 File contents:
 
-# File `whitelist.j2`
+## File `whitelist.j2`
 
 This file is a template that generates lines for each authorized user, in the format required by `access.conf`.
 
@@ -21,7 +21,7 @@ Example output if the variable `utenti_autorizzati` contains ["livio", "ludo"]:
 + : ludo : ALL
 ```
 
-# File `playbook.yml`
+## File `playbook.yml`
 Content:
 
 ```yml
@@ -53,7 +53,7 @@ Generates a temporary file /tmp/access_whitelist.txt from the Jinja2 template wh
 ```
 Inserts the whitelist content into the /etc/security/access.conf file before the line that blocks all access (- : ALL : ALL), wrapping it in identifiable markers.
 
-# File `vars.yml` (Variables)
+## File `vars.yml` (Variables)
 
 Contains the list of authorized users to be inserted into the whitelist.
 
