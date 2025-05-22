@@ -1,4 +1,4 @@
-- name: Configura limiti per utente in /etc/security/limits.conf
+- name: Configure limits for user in /etc/security/limits.conf
   hosts: localhost
   become: true
   connection: local
@@ -6,14 +6,13 @@
     - vars.yml
 
   tasks:
-    - name: Genera file temporaneo da template
+    - name: Generate temporary file from template
       template:
         src: templates/limits.j2
         dest: /tmp/limits_{{ utente }}.txt
 
-
-    - name: Inserisce limiti nel file /etc/security/limits.conf
+    - name: Insert limits into the /etc/security/limits.conf file
       blockinfile:
         path: /etc/security/limits.conf
-        marker: "# {mark} ANSIBLE LIMITI {{ utente }}"
+        marker: "# {mark} ANSIBLE LIMITS {{ utente }}"
         block: "{{ lookup('file', '/tmp/limits_' + utente + '.txt') }}"
