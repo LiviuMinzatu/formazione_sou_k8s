@@ -1,52 +1,40 @@
 pipeline {
-    // Define the Jenkins agent to run this pipeline on (must match a configured node label)
     agent { label 'agent' }
 
     parameters {
-        // Define a string parameter to choose the Git branch or tag to build
         string(
             name: 'GIT_REF',
             defaultValue: 'main',
-            description: 'Enter the name of the Git branch or tag to build (e.g.: main, develop, v1.0.0)'
+            description: 'Inserisci il nome del branch o tag Git da buildare (es: main, develop, v1.0.0)'
         )
     }
 
     environment {
-        // Set the Docker Hub repository (replace with your actual repo)
-        DOCKER_HUB_REPO = 'your-dockerhub-username/your-image-name'
+        DOCKER_HUB_REPO = 'freddo18/flask'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Clone the Git repository at the specified branch or tag
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: "${params.GIT_REF}"]],  // Use the branch/tag passed as a parameter
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/your-username/your-repository.git'  // Replace with your repo URL
-                    ]],
-                    extensions: []  // No extra Git extensions
+                    branches: [[name: "${params.GIT_REF}"]],
+                    userRemoteConfigs: [[url: 'https://github.com/LiviuMinzatu/formazione_sou_k8s.git']],
+                    extensions: []
                 ])
             }
         }
 
-        stage('Compute Docker image tag') {
+        stage('Calcolo tag immagine Docker') {
             steps {
                 script {
-                    // Get the short SHA of the current Git commit
                     def sha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    def ref = params.GIT_REF?.trim()  // Clean up the GIT_REF input
+                    def ref = params.GIT_REF?.trim()
 
-                    // Default to 'main' if input is empty or null
                     if (!ref || ref == '' || ref == 'null') {
                         ref = 'main'
                     }
 
-                    // Determine the Docker tag:
-                    // - 'latest' if ref is 'main'
-                    // - ref itself if it's a version tag (e.g., v1.0.0)
-                    // - otherwise use "ref-sha" format
                     if (ref == 'main') {
                         env.IMAGE_TAG = 'latest'
                     } else if (ref.startsWith('v')) {
@@ -55,42 +43,28 @@ pipeline {
                         env.IMAGE_TAG = "${ref}-${sha}"
                     }
 
-                    // Print the generated Docker image tag
-                    echo "Generated Docker tag: ${env.IMAGE_TAG}"
+                    echo " Docker tag generato: ${env.IMAGE_TAG}"
                 }
             }
         }
 
         stage('Build Docker') {
             steps {
-                // Navigate into the directory containing the Dockerfile
-                dir('your/project/path') {  // Replace with the correct path
+                dir('Track 2/flask') {
                     sh '''
-                        echo "Building Docker image..."
+                        echo " Build immagine Docker..."
                         docker build -t ${DOCKER_HUB_REPO}:${IMAGE_TAG} .
-                    ''' // Build the Docker image with the computed tag
+                    '''
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Push Docker Hub') {
             steps {
-                // Use Jenkins stored credentials to log into Docker Hub
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: 'your-dockerhub-credentials-id',  // Replace with your credentials ID in Jenkins
-                        usernameVariable: 'DOCKER_USERNAME',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
-                        // Log into Docker Hub using stored credentials
                         echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        
-                        // Push the image to Docker Hub
                         docker push ${DOCKER_HUB_REPO}:${IMAGE_TAG}
-                        
-                        // Logout from Docker Hub
                         docker logout
                     '''
                 }
@@ -100,10 +74,9 @@ pipeline {
 
     post {
         always {
-            // Always run this step: clean up the local Docker image after build/push
             sh '''
-                echo "Cleaning up local image..."
-                docker rmi ${DOCKER_HUB_REPO}:${IMAGE_TAG} || true  // Ignore errors if image not found
+                echo " Pulizia immagine locale..."
+                docker rmi ${DOCKER_HUB_REPO}:${IMAGE_TAG} || true
             '''
         }
     }
