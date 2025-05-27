@@ -1,0 +1,10 @@
+replicaCount: 1
+
+image:
+  repository: freddo18/flask
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
