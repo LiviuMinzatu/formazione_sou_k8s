@@ -18,36 +18,9 @@ Vagrant.configure("2") do |config|
     sudo apt-get update -y
     sudo apt-get upgrade -y
   SHELL
-  #############################################################################
-  # Decommentare le righe seguenti per eseguire i playbook Ansible specifici
-  #############################################################################
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "install_helm.yml"
-  # end
 
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "install_docker.yml"
-  # end
-
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "install_kind.yml"
-  # end
-
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "install_jenkins.yml"
-  # end
-
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "install_kubectl.yml"
-  # end
-
-  # config.vm.provision "ansible" do |ansible|
-  # ansible.playbook = "configure_jenkins_kube.yml"
-  # end
-
-  # Playbook principale che include tutti gli altri
   config.vm.provision "ansible" do |ansible|
-  ansible.playbook = "main.yml" # main.yml è il playbook principale che include tutti gli altri
+  ansible.playbook = "main.yml" 
   end
 
 end
