@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Controllo presenza helm e kubectl') {
+            steps {
+                echo 'Controllo se helm e kubectl sono installati...'
+                sh '''
+                    if ! command -v helm > /dev/null; then
+                        echo "ERRORE: helm non trovato"
+                        exit 1
+                    fi
+                    if ! command -v kubectl > /dev/null; then
+                        echo "ERRORE: kubectl non trovato"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
+        stage('Verifica funzionamento') {
+            steps {
+                echo 'Verifica funzionamento di helm e kubectl...'
+                sh '''
+                    echo "--- Versioni ---"
+                    helm version
+                    kubectl version --client
+
+                    echo "--- Test connessione al cluster ---"
+                    kubectl cluster-info || { echo "ERRORE: kubectl non riesce a connettersi al cluster"; exit 1; }
+                    helm list || { echo "ERRORE: helm non riesce a connettersi al cluster"; exit 1; }
+
+                    echo "--- Creazione namespace (se non esiste) ---"
+                    if kubectl get namespace formazione-sou > /dev/null 2>&1; then
+                        echo "Namespace 'formazione-sou' già esistente"
+                    else
+                        echo "Creazione namespace 'formazione-sou'..."
+                        kubectl create namespace formazione-sou
+                    fi
+
+                    echo "--- Elenco namespace ---"
+                    kubectl get ns
+                '''
+            }
+        }
+    }
+
+    post {
+        failure {
+            echo 'Verifica fallita: controlla i log per dettagli.'
+        }
+        success {
+            echo 'helm e kubectl sono installati e funzionano correttamente.'
+        }
+    }
+}

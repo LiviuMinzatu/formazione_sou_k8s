@@ -1,0 +1,293 @@
+- name: Installazione di Docker su Ubuntu 22.04
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Aggiorna l'indice dei pacchetti APT
+      apt:
+        update_cache: yes
+
+    - name: Installa i pacchetti richiesti
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+
+    - name: Aggiungi la GPG key ufficiale di Docker
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Aggiungi il repository Docker
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+        filename: docker
+
+    - name: Aggiorna nuovamente l'indice dei pacchetti
+      apt:
+        update_cache: yes
+
+    - name: Installa Docker Engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+
+    - name: Avvia e abilita il servizio Docker
+      systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+- name: Installa Helm su Ubuntu
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Installa curl, gnupg, apt-transport-https
+      apt:
+        name:
+          - curl
+          - apt-transport-https
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Aggiungi la GPG key di Helm
+      apt_key:
+        url: https://baltocdn.com/helm/signing.asc
+        state: present
+
+    - name: Aggiungi il repository di Helm
+      apt_repository:
+        repo: deb https://baltocdn.com/helm/stable/debian/ all main
+        state: present
+        filename: helm-stable
+
+    - name: Aggiorna la cache dei pacchetti
+      apt:
+        update_cache: yes
+
+    - name: Installa Helm
+      apt:
+        name: helm
+        state: latest
+
+    - name: Verifica l'installazione di Helm
+      command: helm version
+      register: helm_output
+      changed_when: false
+
+    - name: Mostra la versione installata
+      debug:
+        msg: "{{ helm_output.stdout }}" #Output della versione di Helm installata
+
+
+- name: Installazione di Jenkins su Ubuntu 22.04
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Aggiorna l'indice dei pacchetti APT
+      apt:
+        update_cache: yes
+
+    - name: Installa Java (OpenJDK 17)
+      apt:
+        name: openjdk-17-jdk # Jenkins richiede Java
+        state: present
+
+    - name: Aggiungi la GPG key di Jenkins
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present 
+
+    - name: Aggiungi il repository di Jenkins
+      apt_repository:
+        repo: deb https://pkg.jenkins.io/debian-stable binary/ # Repository di Jenkins
+        state: present
+        filename: jenkins
+
+    - name: Aggiorna nuovamente i pacchetti
+      apt:
+        update_cache: yes # Aggiorna l'indice dei pacchetti dopo aver aggiunto il repository di Jenkins
+
+    - name: Installa Jenkins
+      apt:
+        name: jenkins
+        state: latest
+
+    - name: Avvia e abilita il servizio Jenkins
+      systemd:
+        name: jenkins
+        enabled: yes
+        state: started # Avvia Jenkins e abilita il servizio all'avvio del sistema
+
+    - name: Attendi che Jenkins sia in ascolto sulla porta 8080
+      wait_for:
+        port: 8080 # Attende che Jenkins sia in ascolto sulla porta 8080
+        state: started
+        timeout: 30 # Timeout di 30 secondi per l'attesa
+
+    - name: Mostra la password iniziale di Jenkins
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword # Recupera la password iniziale di Jenkins
+      register: jenkins_admin_password # Registra il risultato della lettura della password
+
+    - name: Stampa la password iniziale di Jenkins
+      debug:
+        msg: "Password iniziale Jenkins: {{ jenkins_admin_password['content'] | b64decode }}" # Decodifica e mostra la password iniziale di Jenkins in chiaro
+
+- name: Installazione di Kind su Ubuntu 22.04 
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Verifica che Docker sia installato #
+      command: docker --version
+      register: docker_installed
+      ignore_errors: yes
+
+    - name: Fallisci se Docker non è installato
+      fail:
+        msg: "Docker non è installato! Installa Docker prima di usare questo playbook."
+      when: docker_installed.rc != 0 
+
+    - name: Scarica l'ultima versione di kind (Linux AMD64)
+      get_url:
+        url: https://kind.sigs.k8s.io/dl/latest/kind-linux-amd64
+        dest: /usr/local/bin/kind # Scarica il binario di kind
+        mode: '0755' # Imposta i permessi del file binario
+
+    - name: Verifica che kind sia installato
+      command: kind --version # Verifica la versione di kind installata
+      register: kind_version
+      changed_when: false
+
+    - name: Mostra la versione di kind installata
+      debug:
+        msg: "Kind installato: {{ kind_version.stdout }}" # Mostra la versione di kind installata
+
+
+- name: Installa kubectl su Ubuntu 22.04
+  hosts: all #
+  become: true
+
+  vars:
+    kubectl_arch: amd64
+    kubectl_os: linux
+
+  tasks:
+    - name: Ottieni l'ultima versione stabile di kubectl (via API Kubernetes)
+      uri:
+        url: https://dl.k8s.io/release/stable.txt
+        return_content: yes
+      register: kubectl_version_response
+
+    - name: Imposta la versione stabile come variabile
+      set_fact:
+        kubectl_version: "{{ kubectl_version_response.content | trim }}"  # Imposta la versione di kubectl come variabile
+
+    - name: Scarica kubectl {{ kubectl_version }}
+      get_url:
+        url: "https://dl.k8s.io/{{ kubectl_version }}/bin/{{ kubectl_os }}/{{ kubectl_arch }}/kubectl" # Scarica il binario di kubectl
+        dest: /usr/local/bin/kubectl
+        mode: '0755' # Scarica il binario di kubectl e imposta i permessi
+
+    - name: Verifica l'installazione di kubectl
+      command: kubectl version --client
+      register: kubectl_output
+      changed_when: false
+
+    - name: Mostra la versione di kubectl
+      debug:
+        msg: "{{ kubectl_output.stdout }}" # Mostra la versione di kubectl installata
+
+- name: Configura Jenkins per accedere a Kubernetes (Kind)
+  hosts: all
+  become: true
+
+  vars:
+    kubeconfig_source: "/home/vagrant/.kube/config" # Percorso del kubeconfig per vagrant
+    kubeconfig_target: "/var/lib/jenkins/.kube/config" # Percorso del kubeconfig per Jenkins
+
+  tasks:
+
+    - name: Aggiungi vagrant al gruppo docker #
+      user:
+        name: vagrant
+        groups: docker
+        append: yes
+
+    - name: Aggiungi jenkins al gruppo docker
+      user:
+        name: jenkins
+        groups: docker
+        append: yes
+
+    - name: Riavvia Jenkins per applicare il gruppo docker 
+      systemd:
+        name: jenkins
+        state: restarted 
+        enabled: true
+
+    - name: Assicurati che la directory .kube esista per vagrant
+      file:
+        path: "/home/vagrant/.kube"
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0755' 
+
+    - name: Verifica se il cluster Kind esiste
+      shell: kind get clusters | grep -w jenkins-cluster # Controlla se il cluster Kind esiste
+      register: cluster_check
+      ignore_errors: true # Da erore in rosso pero continua l'esecuzione quindi non ti preoccupare sir
+
+    - name: Crea cluster Kind se non esiste (come root) 
+      shell: kind create cluster --name jenkins-cluster # Crea un cluster Kind se non esiste
+      when: cluster_check.rc != 0 
+
+    - name: Estrai kubeconfig da Kind
+      shell: kind get kubeconfig --name jenkins-cluster > {{ kubeconfig_source }} # Estrae il kubeconfig dal cluster Kind
+
+    - name: Cambia proprietario del kubeconfig a vagrant
+      file:
+        path: "{{ kubeconfig_source }}"
+        owner: vagrant
+        group: vagrant
+        mode: '0644' 
+
+    - name: Crea la cartella .kube per Jenkins
+      file:
+        path: "/var/lib/jenkins/.kube"
+        state: directory
+        owner: jenkins
+        group: jenkins
+        mode: '0755' 
+
+    - name: Copia il kubeconfig da vagrant a Jenkins (remote -> remote)
+      copy:
+        src: "{{ kubeconfig_source }}"
+        dest: "{{ kubeconfig_target }}"
+        remote_src: true
+        owner: jenkins
+        group: jenkins
+        mode: '0644'
+
+    - name: Verifica che Jenkins possa accedere a Kubernetes (via sudo) 
+      shell: sudo -u jenkins kubectl get namespaces # Verifica che Jenkins possa accedere a Kubernetes
+      register: kubecheck
+      changed_when: false
+
+    - name: Mostra i namespace visti da Jenkins
+      debug:
+        msg: "{{ kubecheck.stdout_lines }}" # Mostra i namespace visti da Jenkins in verde

@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+
+    environment {
+        REPO_URL = 'https://github.com/LiviuMinzatu/formazione_sou_k8s.git'
+        CHART_PATH = 'Track 2/flask-app'
+        RELEASE_NAME = 'formazione-release'
+        NAMESPACE = 'formazione-sou'
+    }
+
+    stages {
+        stage('Clona il repository') {
+            steps {
+                git url: "${REPO_URL}", branch: 'main'
+            }
+        }
+
+        stage('Crea namespace (se non esiste)') {
+            steps {
+                sh '''
+                    if kubectl get namespace ${NAMESPACE} > /dev/null 2>&1; then
+                        echo "Namespace ${NAMESPACE} già esistente"
+                    else
+                        echo "Creo il namespace ${NAMESPACE}"
+                        kubectl create namespace ${NAMESPACE}
+                    fi
+                '''
+            }
+        }
+
+        stage('Installa Helm chart') {
+            steps {
+                sh '''
+                    echo "Eseguo helm install..."
+                    helm install ${RELEASE_NAME} "${CHART_PATH}" -n ${NAMESPACE}
+                '''
+            }
+        }
+
+        stage('Attendi 1 minuti') {
+            steps {
+                echo 'Attesa di 1 minuti prima dell\'uninstall...'
+                sleep time: 1, unit: 'MINUTES'
+            }
+        }
+
+        stage('Disinstalla Helm release') {
+            steps {
+                sh '''
+                    echo "Eseguo helm uninstall..."
+                    helm uninstall ${RELEASE_NAME} -n ${NAMESPACE}
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline terminata."
+        }
+    }
+}
