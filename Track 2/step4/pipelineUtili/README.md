@@ -1,56 +1,55 @@
-# Pipeline di Verifica Helm e Kubectl
+# Helm and Kubectl Verification Pipeline
 
-Questa pipeline Jenkins esegue un controllo completo su `helm` e `kubectl`, verificando che siano installati e funzionanti, e che possano connettersi correttamente al cluster Kubernetes.
+This Jenkins pipeline performs a full check on `helm` and `kubectl`, verifying that they are installed, functional, and able to connect to the Kubernetes cluster.
 
-## Fasi della Pipeline
+## Pipeline Stages
 
-### 1. Controllo presenza helm e kubectl
-Verifica che i comandi `helm` e `kubectl` siano disponibili nel sistema. In caso contrario, la pipeline viene interrotta con un errore.
+### 1. Check for helm and kubectl
+Ensures that `helm` and `kubectl` commands are available in the system. If not, the pipeline stops with an error.
 
-### 2. Verifica funzionamento
-- Stampa le versioni di `helm` e `kubectl`
-- Controlla che `kubectl` sia connesso al cluster (`kubectl cluster-info`)
-- Controlla che `helm` riesca a connettersi (`helm list`)
-- Crea il namespace `formazione-sou` se non esiste
-- Elenca tutti i namespace del cluster
+### 2. Functionality Check
+- Prints the versions of `helm` and `kubectl`
+- Checks if `kubectl` is connected to the cluster (`kubectl cluster-info`)
+- Checks if `helm` can connect to the cluster (`helm list`)
+- Creates the `formazione-sou` namespace if it doesn't exist
+- Lists all namespaces in the cluster
 
-## Esito della Pipeline
+## Pipeline Outcome
 
-- In caso di errore in uno qualsiasi degli step, viene mostrato un messaggio di errore e la pipeline termina.
-- In caso di successo, viene confermato che `helm` e `kubectl` sono installati e operativi.
+- If any step fails, an error message is displayed and the pipeline stops.
+- If successful, it confirms that `helm` and `kubectl` are installed and working properly.
 
 
-# Pipeline Helm: Deploy Temporaneo su Kubernetes
+# Helm Pipeline: Temporary Deploy on Kubernetes
 
-Questa pipeline Jenkins clona un repository Git contenente una Helm chart, la installa su Kubernetes, attende un minuto e poi la disinstalla. È utile per test o validazioni rapide.
+This Jenkins pipeline clones a Git repository containing a Helm chart, installs it on Kubernetes, waits one minute, and then uninstalls it. Useful for testing or quick validation.
 
-## Fasi della Pipeline
+## Pipeline Stages
 
-### 1. Clona il repository
-Clona il repository Git specificato nella variabile `REPO_URL`, branch `main`.
+### 1. Clone the repository
+Clones the Git repository specified by the `REPO_URL` variable, branch `main`.
 
-### 2. Crea namespace (se non esiste)
-Controlla se il namespace specificato (`formazione-sou`) esiste. In caso contrario, lo crea.
+### 2. Create namespace (if not exists)
+Checks whether the specified namespace (`formazione-sou`) exists. If not, it creates it.
 
-### 3. Installa Helm chart
-Installa la Helm chart contenuta nel percorso `Track 2/flask-app`, usando:
-- Nome release: `formazione-release`
+### 3. Install Helm chart
+Installs the Helm chart located at `Track 2/flask-app`, using:
+- Release name: `formazione-release`
 - Namespace: `formazione-sou`
 
-### 4. Attendi 1 minuto
-Attende 1 minuto prima di procedere alla disinstallazione. Serve per dare tempo al pod di avviarsi e verificare il deploy.
+### 4. Wait 1 minute
+Waits 1 minute before proceeding to uninstallation. This allows time for the pod to start and for deployment verification.
 
-### 5. Disinstalla Helm release
-Disinstalla la release Helm appena creata, liberando risorse nel cluster.
+### 5. Uninstall Helm release
+Uninstalls the just-created Helm release, freeing up cluster resources.
 
-## Variabili di ambiente
+## Environment Variables
 
-- `REPO_URL`: URL del repository Git
-- `CHART_PATH`: Percorso della chart Helm all'interno del repo
-- `RELEASE_NAME`: Nome della release Helm
-- `NAMESPACE`: Namespace Kubernetes dove operare
+- `REPO_URL`: Git repository URL
+- `CHART_PATH`: Path to the Helm chart inside the repo
+- `RELEASE_NAME`: Name of the Helm release
+- `NAMESPACE`: Kubernetes namespace to use
 
+## Pipeline Outcome
 
-## Esito della Pipeline
-
-Al termine dell’esecuzione, la Helm release viene rimossa e viene stampato il messaggio **"Pipeline terminata."**
+At the end of execution, the Helm release is removed and the message **"Pipeline completed."** is displayed.

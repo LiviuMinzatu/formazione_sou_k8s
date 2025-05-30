@@ -1,119 +1,118 @@
-# Setup ambiente Ubuntu Jenkins + Kubernetes
+# Ubuntu Environment Setup: Jenkins + Kubernetes
 
 ## Vagrant
 
-Macchina virtuale basata su Ubuntu, configurata con:
+A virtual machine based on Ubuntu, configured with:
 
-- **Port forwarding** sulla porta `8080`
-- **IP privato** assegnato: `192.168.56.11`
+- **Port forwarding** on port `8080`  
+- **Private IP** assigned: `192.168.56.11`
 
-Il **task principale** consiste nell'avvio del playbook `main.yml`.
+The **main task** is to run the `main.yml` playbook.
 
+## Main Actions of the `main.yml` Playbook
 
-## Azioni principali del playbook main.yml
-
-- Docker (per containerizzazione)
-- Helm (package manager per Kubernetes)
-- Jenkins (server CI/CD)
-- Kind (Kubernetes IN Docker)
-- kubectl (CLI per Kubernetes)
-- Configurazione di Jenkins per interagire con Kubernetes (Kind)
+- Docker (for containerization)  
+- Helm (package manager for Kubernetes)  
+- Jenkins (CI/CD server)  
+- Kind (Kubernetes IN Docker)  
+- kubectl (Kubernetes CLI)  
+- Jenkins configuration to interact with Kubernetes (Kind)
 
 ---
 
-## Componenti installati
+## Installed Components
 
 ### Docker
 
-Installa e configura Docker, il motore per i container.
+Installs and configures Docker, the container engine.
 
-Cosa fa:
-- Aggiunge il repository ufficiale di Docker
-- Installa `docker-ce`, `docker-ce-cli`, `containerd.io`
-- Abilita e avvia il servizio Docker
+What it does:
+- Adds the official Docker repository  
+- Installs `docker-ce`, `docker-ce-cli`, `containerd.io`  
+- Enables and starts the Docker service
 
 ### Helm
 
-Installa Helm, un gestore di pacchetti per Kubernetes.
+Installs Helm, a package manager for Kubernetes.
 
-Cosa fa:
-- Aggiunge il repository e la chiave GPG di Helm
-- Installa Helm
-- Verifica l'installazione (`helm version`)
+What it does:
+- Adds the Helm repository and GPG key  
+- Installs Helm  
+- Verifies the installation (`helm version`)
 
 ### Jenkins
 
-Installa e configura Jenkins, uno strumento CI/CD.
+Installs and configures Jenkins, a CI/CD tool.
 
-Cosa fa:
-- Installa Java (necessario per Jenkins)
-- Aggiunge repository e chiave GPG
-- Installa Jenkins
-- Avvia e abilita Jenkins
-- Attende che Jenkins sia attivo sulla porta 8080
-- Stampa la password iniziale per la configurazione via web
+What it does:
+- Installs Java (required by Jenkins)  
+- Adds the Jenkins repository and GPG key  
+- Installs Jenkins  
+- Starts and enables the Jenkins service  
+- Waits for Jenkins to become available on port 8080  
+- Prints the initial password for web-based setup
 
 ### Kind (Kubernetes IN Docker)
 
-Installa Kind per creare un cluster Kubernetes locale.
+Installs Kind to create a local Kubernetes cluster.
 
-Cosa fa:
-- Verifica che Docker sia installato
-- Scarica e installa il binario di Kind
-- Verifica che `kind` funzioni correttamente
+What it does:
+- Checks if Docker is installed  
+- Downloads and installs the Kind binary  
+- Verifies that `kind` is working properly
 
 ### kubectl
 
-Installa kubectl, la CLI ufficiale di Kubernetes.
+Installs `kubectl`, the official Kubernetes CLI.
 
-Cosa fa:
-- Recupera l’ultima versione stabile da Kubernetes API
-- Scarica e installa `kubectl`
-- Verifica l’installazione (`kubectl version --client`)
-
----
-
-## Configurazione Jenkins per Kubernetes (Kind)
-
-Configura Jenkins per poter interagire con il cluster Kind:
-
-Cosa fa:
-1. Aggiunge `vagrant` e `jenkins` al gruppo `docker`
-2. Riavvia Jenkins
-3. Verifica se esiste un cluster chiamato `jenkins-cluster`
-4. Se non esiste, lo crea
-5. Estrae il kubeconfig da Kind
-6. Imposta i permessi corretti su kubeconfig
-7. Copia il kubeconfig nella home di Jenkins (`/var/lib/jenkins/.kube/config`)
-8. Verifica che Jenkins possa usare `kubectl` per accedere al cluster
+What it does:
+- Fetches the latest stable version from the Kubernetes API  
+- Downloads and installs `kubectl`  
+- Verifies the installation (`kubectl version --client`)
 
 ---
 
-## Risultato finale
+## Jenkins Configuration for Kubernetes (Kind)
 
-Alla fine dell'esecuzione del playbook, si avrà:
+Configures Jenkins to interact with the Kind cluster:
 
-- Un ambiente CI/CD completo funzionante in locale
-- Jenkins collegato a un cluster Kubernetes
-- Tutti i tool principali installati e configurati (Docker, kubectl, Helm, Kind)
-- Pronto per sviluppare pipeline CI/CD su Kubernetes
-
----
-
-## Requisiti
-
-- Ubuntu 22.04
-- Utente con privilegi sudo
-- Ansible installato sul sistema di controllo, in questo caso MacOS
+What it does:
+1. Adds `vagrant` and `jenkins` users to the `docker` group  
+2. Restarts Jenkins  
+3. Checks if a cluster named `jenkins-cluster` exists  
+4. If not, creates it  
+5. Extracts the kubeconfig from Kind  
+6. Sets correct permissions on the kubeconfig  
+7. Copies the kubeconfig to Jenkins' home directory (`/var/lib/jenkins/.kube/config`)  
+8. Verifies that Jenkins can use `kubectl` to access the cluster
 
 ---
 
-## Cartella pipelineUtili
+## Final Result
 
-### controlloFunzionamento.txt
+After the playbook execution, you will have:
 
-Questo file contiene una pipeline pronta all'uso che verifica il corretto funzionamento di `kubectl` e `helm`.
+- A fully functional local CI/CD environment  
+- Jenkins connected to a Kubernetes cluster  
+- All essential tools installed and configured (Docker, kubectl, Helm, Kind)  
+- Ready to develop CI/CD pipelines on Kubernetes
 
-### avvioConHelm.txt
+---
 
-Questo file contiene una pipeline che esegue specifiche azioni previste dallo step di avvio con `helm`.
+## Requirements
+
+- Ubuntu 22.04  
+- User with sudo privileges  
+- Ansible installed on the control system (in this case, macOS)
+
+---
+
+## `pipelineUtili` Folder
+
+### `controlloFunzionamento.txt`
+
+This file contains a ready-to-use pipeline that checks the proper functioning of `kubectl` and `helm`.
+
+### `avvioConHelm.txt`
+
+This file contains a pipeline that performs specific actions related to the Helm startup step.
