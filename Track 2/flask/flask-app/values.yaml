@@ -1,0 +1,36 @@
+replicaCount: 1
+
+image:
+  repository: freddo18/flask-app
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 5000
+
+containerPort: 5000
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  automount: true
+
+
+ingress:
+  enabled: false       # metti true se vuoi usarlo
+  className: ""
+  annotations: {}
+  hosts:
+    - host: flask.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
