@@ -5,11 +5,33 @@ image:
   pullPolicy: IfNotPresent
   tag: "latest"
 
+containerPort: 5000
+
+resources:
+  limits:
+    memory: "128Mi"
+    cpu: "250m"
+  requests:
+    memory: "64Mi"
+    cpu: "100m"
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 20
+
 service:
   type: ClusterIP
   port: 5000
-
-containerPort: 5000
 
 serviceAccount:
   create: true
@@ -17,9 +39,8 @@ serviceAccount:
   annotations: {}
   automount: true
 
-
 ingress:
-  enabled: false       # metti true se vuoi usarlo
+  enabled: false
   className: ""
   annotations: {}
   hosts:
