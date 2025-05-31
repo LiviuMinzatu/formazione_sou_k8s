@@ -48,3 +48,8 @@ else
   echo "Sono stati trovati $ERRORS problemi con le best practices del Deployment."
   exit 1
 fi
+
+
+
+#sudo apt update
+#sudo apt install jq -y
