@@ -17,7 +17,7 @@ L’intero ambiente è stato costruito utilizzando **Vagrant** e **Ansible**, co
 - `Guida.txt`: appunti o guida locale (ne avevo davvero bisogno, sono fondamentali)
 - `README.md`: questo file
 
-![Schema](schema.png)
+![Schema](Schema.png)
  [Schema PDF](schema.pdf)
 
 ---
