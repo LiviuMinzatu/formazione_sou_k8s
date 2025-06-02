@@ -1,0 +1,95 @@
+- name: Esegui comandi curl per configurare Jenkins agent
+  hosts: jenkins                 # Esegue i task sulla macchina Jenkins
+  become: false                
+  vars:
+    jenkins_url: "http://192.168.56.10:8080"  
+    agent_name: "agent-livio"                
+
+  tasks:
+    # Ottiene il CSRF crumb da Jenkins e salva anche il cookie per autenticazione successiva
+    - name: Ottieni Jenkins crumb e salva in cookies.txt e crumb.json
+      shell: |
+        curl -u admin:{{ jenkins_api_token }} -c cookies.txt {{ jenkins_url }}/crumbIssuer/api/json > crumb.json
+      args:
+        chdir: "/home/vagrant"  # Esegue il comando da questa directory
+      register: crumb_cmd
+      changed_when: false       # Evita che il task risulti "changed" ogni volta
+
+    # Legge il file JSON del crumb per poterlo usare nei passaggi successivi
+    - name: Leggi crumb dal file JSON
+      slurp:
+        src: "/home/vagrant/crumb.json"   # Legge il contenuto come base64
+      register: crumb_file
+
+    # Estrae il campo 'crumb' dal JSON letto e lo salva in una variabile 
+    - name: Set crumb variable dal file JSON
+      set_fact:
+        jenkins_crumb: "{{ crumb_file.content | b64decode | from_json | json_query('crumb') }}"
+
+    # Scarica il file agent.jar necessario per avviare l’agente JNLP
+    - name: Scarica agent.jar
+      shell: |
+        curl -O {{ jenkins_url }}/jnlpJars/agent.jar
+      args:
+        chdir: "/home/vagrant"
+      register: download_agentjar
+      changed_when: false
+
+    # Crea l'agente Jenkins usando le API HTTP e i dati del crumb e dei cookie
+    - name: Crea Jenkins agent via API curl con crumb e cookie
+      shell: |
+        curl -X POST -u admin:{{ jenkins_api_token }} \
+          -b cookies.txt \
+          -H "Content-Type: application/x-www-form-urlencoded" \
+          -H "Jenkins-Crumb: {{ jenkins_crumb }}" \
+          --data-urlencode 'name={{ agent_name }}' \
+          --data-urlencode 'type=hudson.slaves.DumbSlave' \
+          --data-urlencode 'json={
+            "name": "{{ agent_name }}",
+            "nodeDescription": "Nodo creato via API",
+            "numExecutors": "1",
+            "remoteFS": "/home/vagrant/agent",
+            "labelString": "",
+            "mode": "EXCLUSIVE",
+            "type": "hudson.slaves.DumbSlave",
+            "retentionStrategy": {"stapler-class": "hudson.slaves.RetentionStrategy$Always"},
+            "nodeProperties": {"stapler-class-bag": "true"},
+            "launcher": {"stapler-class": "hudson.slaves.JNLPLauncher"}
+          }' \
+          {{ jenkins_url }}/computer/doCreateItem
+      args:
+        chdir: "/home/vagrant"
+      register: create_agent_cmd
+      changed_when: false
+
+    # Scarica il file .jnlp per il nodo, necessario per connettere l'agente
+    - name: Scarica file JNLP agente (prima volta)
+      shell: |
+        curl -u admin:{{ jenkins_api_token }} {{ jenkins_url }}/computer/{{ agent_name }}/jenkins-agent.jnlp -o {{ agent_name }}.jnlp
+      args:
+        chdir: "/home/vagrant"
+      register: download_jnlp_cmd
+      changed_when: false
+
+    # Scarica nuovamente il file JNLP, come da tuo test precedente
+    - name: Scarica file JNLP agente (seconda volta, come da tuo ultimo comando)
+      shell: |
+        curl -u admin:{{ jenkins_api_token }} {{ jenkins_url }}/computer/{{ agent_name }}/jenkins-agent.jnlp -o {{ agent_name }}-second.jnlp
+      args:
+        chdir: "/home/vagrant"
+      register: download_jnlp_cmd_2
+      changed_when: false
+
+    # Copia il file JNLP dal nodo Jenkins alla macchina di controllo
+    - name: Copia file JNLP originale da Jenkins a locale
+      fetch:
+        src: "/home/vagrant/{{ agent_name }}.jnlp"
+        dest: "./"          # Salva nella directory locale corrente
+        flat: yes       # Non crea sottocartelle per ogni host
+
+    # Copia anche la seconda versione del file JNLP
+    - name: Copia file JNLP seconda copia da Jenkins a locale
+      fetch:
+        src: "/home/vagrant/{{ agent_name }}-second.jnlp"
+        dest: "./"
+        flat: yes

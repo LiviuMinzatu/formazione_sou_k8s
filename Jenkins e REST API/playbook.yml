@@ -1,0 +1,67 @@
+# Playbook per installare e configurare Jenkins server sulla macchina "jenkins"
+- name: Setup Jenkins server
+  hosts: jenkins
+  become: true
+  tasks:
+    # Installa Java, curl e gnupg
+    - name: Install required packages
+      apt:
+        name:
+          - openjdk-17-jdk
+          - curl
+          - gnupg
+        update_cache: true
+
+    # Crea la directory delle keyrings per APT se non esiste
+    - name: Ensure keyrings directory exists
+      file:
+        path: /usr/share/keyrings
+        state: directory
+        mode: '0755'
+
+    # Scarica la chiave GPG di Jenkins
+    - name: Download Jenkins GPG key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        dest: /usr/share/keyrings/jenkins-keyring.asc
+        mode: '0644'
+
+    # Imposta JAVA_HOME per Jenkins
+    - name: Set JAVA_HOME for Jenkins
+      lineinfile:
+        path: /etc/default/jenkins
+        line: 'JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64'
+        create: yes
+
+    # Aggiunge il repository APT di Jenkins
+    - name: Add Jenkins APT repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        filename: jenkins
+        state: present
+
+    # Installa Jenkins
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        update_cache: true
+
+    # Avvia Jenkins e abilita il servizio al boot
+    - name: Ensure Jenkins is started and enabled
+      systemd:
+        name: jenkins
+        state: started
+        enabled: true
+
+# Playbook per configurare l'agente Jenkins (solo installazione Java e curl)
+- name: Setup Jenkins agent
+  hosts: agent
+  become: true
+  tasks:
+    # Installa Java 17 e curl
+    - name: Install Java 17 and curl
+      apt:
+        name:
+          - openjdk-17-jdk
+          - curl
+        update_cache: true

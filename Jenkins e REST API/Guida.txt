@@ -1,0 +1,94 @@
+
+Creazione e Connessione di un Agente JNLP a Jenkins via API
+
+Questa guida mostra i passaggi per creare e collegare un nodo agente a Jenkins usando chiamate curl e il protocollo JNLP.
+
+
+
+Genera un API Token in Jenkins
+
+Accedi alla UI di Jenkins con l'utente admin:
+
+- Vai su "Manage Jenkins" > "Manage Users" > admin > Configure"
+- Genera un nuovo API Token
+
+Esempio:
+
+API Token: 118cf5300312bf07d70407d3b9972a1ba6
+
+
+
+Ottieni il Crumb per l'autenticazione CSRF
+
+Jenkins richiede un crumb per le chiamate POST. Ottienilo così:
+
+curl -u admin:118cf5300312bf07d70407d3b9972a1ba6 -c cookies.txt \
+  http://192.168.56.10:8080/crumbIssuer/api/json
+
+Annota il valore di crumb restituito, ad esempio:
+
+{
+  "crumb": "a71ab56fab706a67a581c7cdffe7a232fa459c18cca0136cf9d0f8d6c046af3e",
+  "crumbRequestField": "Jenkins-Crumb"
+}
+
+
+
+Crea il nodo agente via API
+
+Invia una richiesta POST per creare un nuovo nodo Jenkins:
+
+curl -X POST -u admin:118cf5300312bf07d70407d3b9972a1ba6 \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -H "Jenkins-Crumb:a71ab56fab706a67a581c7cdffe7a232fa459c18cca0136cf9d0f8d6c046af3e" \
+  --data-urlencode 'name=agent-livio' \
+  --data-urlencode 'type=hudson.slaves.DumbSlave' \
+  --data-urlencode 'json={
+    "name": "agent-livio",
+    "nodeDescription": "Nodo creato via API",
+    "numExecutors": "1",
+    "remoteFS": "/home/vagrant/agent",
+    "labelString": "",
+    "mode": "EXCLUSIVE",
+    "type": "hudson.slaves.DumbSlave",
+    "retentionStrategy": {"stapler-class": "hudson.slaves.RetentionStrategy$Always"},
+    "nodeProperties": {"stapler-class-bag": "true"},
+    "launcher": {"stapler-class": "hudson.slaves.JNLPLauncher"}
+  }' \
+  http://192.168.56.10:8080/computer/doCreateItem
+
+
+
+Assicurati che la porta 50000 sia sbloccata
+
+L’agente JNLP comunica con Jenkins sulla porta 50000. Assicurati che non sia bloccata da firewall o regole di rete.
+
+
+Scarica il file .jnlp dell'agente
+
+curl -u admin:118cf5300312bf07d70407d3b9972a1ba6 \
+  http://192.168.56.10:8080/computer/agent-livio/jenkins-agent.jnlp \
+  -o agent-livio.jnlp
+
+
+Scarica il file agent.jar
+
+curl -O http://192.168.56.10:8080/jnlpJars/agent.jar
+
+
+
+Verifica il contenuto del file .jnlp
+
+cat agent-livio.jnlp
+
+Da qui puoi ottenere il campo secret per l’autenticazione.
+
+
+
+Avvia l’agente Jenkins
+
+java -jar agent.jar \
+  -jnlpUrl http://192.168.56.10:8080/computer/agent-livio/jenkins-agent.jnlp \
+  -secret <il_tuo_secret_da_jnlp> \
+  -workDir "/home/vagrant/agent"
+

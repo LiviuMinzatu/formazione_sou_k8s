@@ -1,0 +1,90 @@
+- name: Configura Jenkins agent
+  hosts: agent                  
+  become: false              
+
+  vars:
+    jenkins_url: "http://192.168.56.10:8080"  # Indirizzo del server Jenkins
+    agent_name: "agent-livio"                # Nome del nodo agente
+    work_dir: "/home/vagrant/agent"          # Directory dove eseguire e salvare i file dell'agente
+
+  tasks:
+
+    # Crea la directory di lavoro per l'agente, con permessi corretti
+    - name: Crea directory di lavoro su agent
+      file:
+        path: "{{ work_dir }}"
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0755'
+
+    # Scarica il file agent.jar da Jenkins
+    - name: Scarica agent.jar
+      shell: |
+        curl -O {{ jenkins_url }}/jnlpJars/agent.jar
+      args:
+        chdir: "{{ work_dir }}"
+      register: download_agentjar
+      changed_when: false
+
+    # Scarica il file .jnlp dell'agente che contiene l'URL e il secret
+    - name: Scarica file JNLP
+      shell: |
+        curl -u admin:{{ jenkins_api_token }} {{ jenkins_url }}/computer/{{ agent_name }}/jenkins-agent.jnlp -o {{ agent_name }}.jnlp
+      args:
+        chdir: "{{ work_dir }}"
+      register: download_jnlp
+      changed_when: false
+
+    # Legge il contenuto del file JNLP in formato base64 
+    - name: Leggi contenuto file JNLP
+      slurp:
+        src: "{{ work_dir }}/{{ agent_name }}.jnlp"
+      register: jnlp_content
+
+    # Mostra il contenuto decodificato del file JNLP (per debug) a console
+    - name: Debug contenuto JNLP decodificato
+      debug:
+        msg: "{{ jnlp_content.content | b64decode }}"
+
+    # Estrae il secret dall'interno del file JNLP usando una regex
+    - name: Estrai secret raw dal file JNLP
+      set_fact:
+        jenkins_secret_raw: >-
+          {{ (jnlp_content.content | b64decode)
+            | regex_search('<application-desc>\\s*<argument>([a-f0-9]+)</argument>', '\\1', multiline=True)
+            | default('') }}
+
+    # Se il risultato è una lista, prende il primo elemento, altrimenti assegna stringa vuota
+    - name: Definisci secret finale (estrai primo elemento se lista)
+      set_fact:
+        jenkins_secret: "{{ jenkins_secret_raw[0] if (jenkins_secret_raw is iterable and jenkins_secret_raw | length > 0) else '' }}"
+
+    # Blocca l'esecuzione se il secret non è stato trovato correttamente
+    - name: Verifica se secret è stato estratto
+      fail:
+        msg: "Impossibile trovare il secret nel file JNLP"
+      when: jenkins_secret == ''
+
+    # Mostra il secret estratto per conferma a video
+    - name: Mostra secret estratto
+      debug:
+        msg: "Secret Jenkins estratto: {{ jenkins_secret }}"
+
+    # Avvia l'agente Jenkins con il secret ottenuto, in background
+    - name: Avvia agente Jenkins con secret estratto
+      shell: >
+        java -jar agent.jar
+        -jnlpUrl {{ jenkins_url }}/computer/{{ agent_name }}/jenkins-agent.jnlp
+        -secret {{ jenkins_secret }}
+        -workDir "{{ work_dir }}"
+      args:
+        chdir: "{{ work_dir }}"
+      async: 600      # Permette che il processo resti attivo per max 10 minuti
+      poll: 0         # Non attendere la fine, lancia in background
+      register: run_agent
+
+    # Mostra il Job ID del processo in background per tracciarlo se serve
+    - name: Mostra Job ID esecuzione agente
+      debug:
+        msg: "Agent Jenkins avviato in background con Job ID {{ run_agent.ansible_job_id }}"
