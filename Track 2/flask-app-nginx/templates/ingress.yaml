@@ -1,0 +1,71 @@
+# Questo blocco viene incluso solo se l'ingresso è abilitato nel values.yaml
+{{- if .Values.ingress.enabled -}}
+
+# Versione dell'API per la risorsa Ingress
+apiVersion: networking.k8s.io/v1
+
+# Tipo di risorsa
+kind: Ingress
+
+# Metadati del file Ingress
+metadata:
+  # Nome generato automaticamente usando una funzione del chart
+  name: {{ include "flask-app.fullname" . }}
+
+  # Etichette comuni definite nel chart
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}
+
+  # Se ci sono annotazioni definite nei values, le include
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+spec:
+  # Se è definito un IngressClass specifico (es. nginx), lo imposta
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+
+  # Se è abilitato TLS, aggiunge la configurazione per HTTPS
+  {{- if .Values.ingress.tls }}
+  tls:
+    # Cicla ogni blocco TLS definito (può essercene più di uno)
+    {{- range .Values.ingress.tls }}
+    - hosts:
+        # Cicla ogni host definito in quel blocco TLS
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      # Nome del secret che contiene il certificato TLS
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+
+  # Definizione delle regole di routing HTTP
+  rules:
+    # Per ogni host definito nella sezione ingress.hosts
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          # Per ogni path sotto quell'host
+          {{- range .paths }}
+          - path: {{ .path }}
+            # Se è specificato, imposta anche il tipo di path (Prefix o Exact)
+            {{- with .pathType }}
+            pathType: {{ . }}
+            {{- end }}
+            backend:
+              service:
+                # Nome del servizio backend a cui indirizzare le richieste
+                name: {{ include "flask-app.fullname" $ }}
+                # Porta del servizio a cui fare il forward
+                port:
+                  number: {{ $.Values.service.port }}
+          {{- end }}
+    {{- end }}
+
+# Fine del blocco condizionale
+{{- end }}

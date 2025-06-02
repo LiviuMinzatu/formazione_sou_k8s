@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+
+# Questo Pod viene usato come test hook per Helm
+# Serve a verificare che il servizio sia raggiungibile dopo il deploy
+metadata:
+  name: "{{ include "flask-app.fullname" . }}-test-connection"  # Nome del pod di test, derivato dal nome completo dell'app
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}             # Etichette standard per identificare la risorsa
+
+  annotations:
+    "helm.sh/hook": test  # Indica a Helm che questo è un test da eseguire dopo install o upgrade
+
+spec:
+  containers:
+    - name: wget                      # Nome del container all'interno del pod
+      image: busybox                 # Immagine leggera per eseguire comandi base come wget
+      command: ['wget']              # Comando da eseguire nel container
+      args: ['{{ include "flask-app.fullname" . }}:{{ .Values.service.port }}']  
+      # Questo esegue una richiesta HTTP al servizio dell'app, sulla porta definita nei values
+
+  restartPolicy: Never               # Il pod non deve essere riavviato in caso di errore

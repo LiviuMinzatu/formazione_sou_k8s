@@ -1,0 +1,98 @@
+# Numero di repliche del pod
+replicaCount: 1
+
+image:
+  # Nome del repository Docker dell'immagine da usare
+  repository: freddo18/flask-app
+
+  # Strategia di pull dell'immagine
+  # IfNotPresent evita di riscaricare l'immagine se è già presente sul nodo
+  pullPolicy: IfNotPresent
+
+  # Tag dell'immagine da usare, in questo caso "latest"
+  tag: "latest"
+
+# Porta su cui il container espone l'applicazione
+containerPort: 5000
+
+resources:
+  # Limiti massimi di risorse che il container può usare
+  limits:
+    memory: "128Mi"  # massimo 128 megabyte di memoria
+    cpu: "250m"      # massimo 250 millicpu
+
+  # Risorse richieste minime garantite al container
+  requests:
+    memory: "64Mi"   # minimo 64 megabyte di memoria richiesti
+    cpu: "100m"      # minimo 100 millicpu richiesti
+
+# Configurazione del readinessProbe
+# Serve a determinare se il container è pronto a ricevere traffico
+readinessProbe:
+  httpGet:
+    path: /         # endpoint da interrogare
+    port: 5000      # porta da usare
+  initialDelaySeconds: 5  # attende 5 secondi prima di iniziare i controlli
+  periodSeconds: 10       # ripete il controllo ogni 10 secondi
+
+# Configurazione del livenessProbe
+# Serve a determinare se il container è ancora vivo e funzionante
+livenessProbe:
+  httpGet:
+    path: /         # endpoint da interrogare
+    port: 5000      # porta da usare
+  initialDelaySeconds: 15  # attende 15 secondi prima del primo controllo
+  periodSeconds: 20        # ripete il controllo ogni 20 secondi
+
+service:
+  # Tipo di servizio Kubernetes
+  # ClusterIP è accessibile solo all'interno del cluster
+  type: ClusterIP
+
+  # Porta esposta dal servizio
+  port: 5000
+
+serviceAccount:
+  # Specifica se creare un nuovo serviceAccount o no
+  create: true
+
+  # Nome personalizzato del serviceAccount, vuoto per usare il nome del release
+  name: ""
+
+  # Eventuali annotazioni da aggiungere al serviceAccount
+  annotations: {}
+
+  # Se true, il token del serviceAccount viene montato nel pod
+  automount: true
+
+ingress:
+  # Abilita l'utilizzo di un Ingress
+  enabled: true
+
+  # Nome della IngressClass da usare, ad esempio nginx
+  className: nginx
+
+  # Annotazioni da aggiungere all'ingress, utile per NGINX
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+  # Definizione degli host e dei path da esporre tramite Ingress
+  hosts:
+    - host: formazionesou.local  # dominio personalizzato usato localmente
+      paths:
+        - path: /                # espone tutta l'app
+          pathType: Prefix       # corrispondenza prefisso per i path
+
+  # TLS vuoto significa che non è configurato HTTPS
+  tls: []
+
+autoscaling:
+  # Disabilita l'autoscaling (HorizontalPodAutoscaler)
+  enabled: false
+
+  # Valori minimi e massimi di repliche per l'autoscaling (non attivi se autoscaling è false)
+  minReplicas: 1
+  maxReplicas: 3
+
+  # Percentuale di utilizzo CPU target per triggerare lo scaling
+  targetCPUUtilizationPercentage: 80

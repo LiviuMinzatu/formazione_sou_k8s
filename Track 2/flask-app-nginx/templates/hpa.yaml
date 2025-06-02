@@ -1,0 +1,56 @@
+# Questa sezione viene inclusa solo se l'autoscaling è abilitato nel file values.yaml
+{{- if .Values.autoscaling.enabled }}
+
+# Specifica la versione dell'API Kubernetes per l'HPA
+apiVersion: autoscaling/v2
+
+# Definisce che stai creando un oggetto di tipo HorizontalPodAutoscaler
+kind: HorizontalPodAutoscaler
+
+# Metadati dell'HPA
+metadata:
+  # Nome generato dinamicamente in base al chart
+  name: {{ include "flask-app.fullname" . }}
+
+  # Etichette standard definite nel template
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}
+
+spec:
+  # Indica su quale oggetto deve agire l'autoscaler, in questo caso un Deployment
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "flask-app.fullname" . }}
+
+  # Numero minimo di repliche che l'HPA può impostare
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+
+  # Numero massimo di repliche che l'HPA può impostare
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+
+  # Elenco delle metriche da usare per lo scaling
+  metrics:
+
+    # Se è definita la soglia di utilizzo della CPU, aggiunge la metrica CPU
+    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+
+    # Se è definita la soglia di utilizzo della memoria, aggiunge la metrica memoria
+    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+
+# Fine del blocco condizionale Helm
+{{- end }}

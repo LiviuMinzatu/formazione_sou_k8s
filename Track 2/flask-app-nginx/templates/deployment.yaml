@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+
+# Metadati del Deployment
+metadata:
+  # Nome completo generato dinamicamente con una funzione definita nei template
+  name: {{ include "flask-app.fullname" . }}
+
+  # Etichette applicate al Deployment, usate per selezione o organizzazione
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}
+
+spec:
+  # Numero di repliche del pod, preso dal file values.yaml
+  replicas: {{ .Values.replicaCount }}
+
+  # Selettore per trovare i pod gestiti da questo Deployment
+  selector:
+    matchLabels:
+      {{- include "flask-app.selectorLabels" . | nindent 6 }}
+
+  # Template del pod che sarà creato dal Deployment
+  template:
+    metadata:
+      labels:
+        {{- include "flask-app.selectorLabels" . | nindent 8 }}
+
+    spec:
+      # Nome del service account da usare per i pod, preso da values.yaml o calcolato
+      serviceAccountName: {{ include "flask-app.serviceAccountName" . }}
+
+      # Definizione dei container all'interno del pod
+      containers:
+        - name: {{ .Chart.Name }}  # nome del container, tipicamente uguale al nome del chart
+
+          # Immagine Docker da usare, costruita da repository e tag nei values
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+
+          # Politica di pull dell'immagine, es. IfNotPresent o Always
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          # Porta esposta dal container, tipicamente HTTP
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+
+          # Readiness probe controlla se il container è pronto a ricevere traffico
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.readinessProbe.httpGet.path }}
+              port: {{ .Values.readinessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+
+          # Liveness probe controlla se il container è ancora vivo e funzionante
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.livenessProbe.httpGet.path }}
+              port: {{ .Values.livenessProbe.httpGet.port }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+
+          # Risorse richieste e limiti per CPU e memoria
+          resources:
+            limits:
+              memory: {{ .Values.resources.limits.memory }}
+              cpu: {{ .Values.resources.limits.cpu }}
+            requests:
+              memory: {{ .Values.resources.requests.memory }}
+              cpu: {{ .Values.resources.requests.cpu }}

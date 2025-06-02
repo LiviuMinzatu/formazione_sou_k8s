@@ -1,0 +1,36 @@
+# Versione dell'API Kubernetes per creare un Service
+apiVersion: v1
+
+# Tipo di risorsa: Service espone un'applicazione nel cluster
+kind: Service
+
+metadata:
+  # Nome del Service generato in base al nome del chart
+  name: {{ include "flask-app.fullname" . }}
+
+  # Etichette applicate al Service, utili per il monitoraggio, selezione o debug
+  labels:
+    {{- include "flask-app.labels" . | nindent 4 }}
+
+spec:
+  # Tipo di Service, può essere ClusterIP, NodePort, LoadBalancer
+  type: {{ .Values.service.type }}
+
+  ports:
+    # Porta esposta dal Service (verso l'esterno o il cluster)
+    - port: {{ .Values.service.port }}
+
+      # Porta del container verso cui il traffico verrà indirizzato
+      # In questo caso "http" è un nome che corrisponde a containerPort dichiarato nel Deployment
+      targetPort: http
+
+      # Protocollo del traffico, di default TCP
+      protocol: TCP
+
+      # Nome della porta per riferimenti interni o per i probe
+      name: http
+
+  # Selettore usato per indirizzare il traffico ai pod giusti
+  # Cerca i pod che hanno queste etichette
+  selector:
+    {{- include "flask-app.selectorLabels" . | nindent 4 }}
