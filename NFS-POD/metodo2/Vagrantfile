@@ -1,0 +1,30 @@
+# Vagrantfile
+Vagrant.configure("2") do |config|
+  # Specifica la box di Ubuntu
+  config.vm.box = "ubuntu/jammy64"  # Ubuntu 22.04 LTS
+
+  # Imposta il nome della macchina virtuale
+  config.vm.hostname = "ubuntu-vm"
+
+  # Configura la rete (opzionale: rete privata con IP statico)
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  # Configura risorse (CPU e RAM)
+  config.vm.provider "virtualbox" do |vb|
+    vb.name = "UbuntuVM"
+    vb.memory = "2048"
+    vb.cpus = 2
+  end
+
+  # Script di provisioning (opzionale)
+  config.vm.provision "shell", inline: <<-SHELL
+    sudo apt-get update
+    sudo apt-get install -y build-essential
+  SHELL
+
+   # Provisioning con Ansible
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+  end
+end
+
