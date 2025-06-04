@@ -13,25 +13,30 @@ vagrant up
 ```
 
 ### Installa il server NFS
+```bash
 sudo apt update
 sudo apt install -y nfs-kernel-server
-
+```
 ### Crea la directory da esportare
+```bash
 sudo mkdir -p /srv/nfs/kshare
 sudo chown nobody:nogroup /srv/nfs/kshare
 sudo chmod 777 /srv/nfs/kshare   # (solo per testing, attenzione in produzione)
-
+```
 ### Aggiungi la directory a /etc/exports
 Modifica il file:
+```bash
 sudo nano /etc/exports
-
+```
 Aggiungi questa riga in fondo:
+```bash
 /srv/nfs/kshare  *(rw,sync,no_subtree_check,no_root_squash)
-
+```
 ### Applica la configurazione
+```bash
 sudo exportfs -rav
 sudo systemctl restart nfs-kernel-server
-
+```
 ---
 
 ## 2. Verifica che la share NFS sia attiva
