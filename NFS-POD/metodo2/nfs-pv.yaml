@@ -9,5 +9,5 @@ spec:
     - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   nfs:
-    server: 192.168.56.10    # <-- IP della tua VM Vagrant
+    server: 192.168.56.10    # IP della VM Vagrant
     path: /mnt/nfs-share

@@ -7,9 +7,9 @@ spec:
   - name: nginx
     image: nginx
     volumeMounts:
-    - mountPath: /usr/share/nginx/html
-      name: nfs-volume
+    - mountPath: /usr/share/nginx/html # Percorso nel container dove il volume sarà montato
+      name: nfs-volume # Nome del volume che verrà montato nel container
   volumes:
-  - name: nfs-volume
+  - name: nfs-volume # Nome del volume che verrà montato nel container
     persistentVolumeClaim:
-      claimName: nfs-pvc
+      claimName: nfs-pvc # Nome del PVC creato in nfs-pvc.yaml

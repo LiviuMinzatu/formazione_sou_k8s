@@ -3,9 +3,9 @@ kind: PersistentVolumeClaim
 metadata:
   name: nfs-pvc
 spec:
-  storageClassName: ""         # <-- Disabilita la richiesta implicita di StorageClass
+  storageClassName: ""       # Specifica che non si utilizza una StorageClass
   accessModes:
-    - ReadWriteMany
+    - ReadWriteMany # Modalità di accesso
   resources:
     requests:
-      storage: 5Gi
+      storage: 5Gi # Dimensione richiesta del PVC
